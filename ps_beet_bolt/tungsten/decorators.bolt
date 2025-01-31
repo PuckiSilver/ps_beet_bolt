@@ -1,0 +1,101 @@
+from ps_beet_bolt.bolt_item import event_decorator
+
+registered = []
+
+def on_equip(slot: str):
+    _assert_is_slot(slot)
+    @event_decorator
+    def decorator(func, item):
+        _add_tungsten_base()
+        _add_tungsten_components(item, slot)
+
+        equip_tag_path = f'bolt-item:tungsten/{slot}/equip'
+        equip_function_path = f'{item.namespace}:bolt-item/tungsten/{slot}/equip'
+        function_path = f'{item.namespace}:bolt-item/item/{item.id}/on_equip/{func.__name__}'
+
+        if _should_register(equip_tag_path):
+            append function_tag equip_tag_path {"values":[equip_function_path]}
+        append function equip_function_path:
+            if score @s f'bolt-item.{slot}' matches (item.hash) function function_path:
+                func()
+
+    return decorator
+
+def on_unequip(slot: str):
+    _assert_is_slot(slot)
+    @event_decorator
+    def decorator(func, item):
+        _add_tungsten_base()
+        _add_tungsten_components(item, slot)
+
+        unequip_tag_path = f'bolt-item:tungsten/{slot}/unequip'
+        unequip_function_path = f'{item.namespace}:bolt-item/tungsten/{slot}/unequip'
+        function_path = f'{item.namespace}:bolt-item/item/{item.id}/on_unequip/{func.__name__}'
+
+        if _should_register(unequip_tag_path):
+            append function_tag unequip_tag_path {"values":[unequip_function_path]}
+        append function unequip_function_path:
+            if score @s f'bolt-item.{slot}' matches (item.hash) function function_path:
+                func()
+
+    return decorator
+
+#>############## helpers ##############<#
+
+def _assert_is_slot(slot: str):
+    if slot not in ["mainhand","offhand","head","chest","legs","feet"]:
+        raise Exception(f'[bolt-item-tungsten]: "{slot}" is not a valid slot')
+
+def _should_register(path: str) -> bool:
+    global registered
+    if path in registered:
+        return False
+    registered.append(path)
+    return True
+
+def _add_tungsten_base():
+    if not _should_register("bolt-item:tungsten/load"):
+        return
+    append function_tag minecraft:load {"values":["bolt-item:tungsten/load"]}
+    function bolt-item:tungsten/load:
+        scoreboard objectives add bolt-item.head dummy
+        scoreboard objectives add bolt-item.chest dummy
+        scoreboard objectives add bolt-item.legs dummy
+        scoreboard objectives add bolt-item.feet dummy
+        scoreboard objectives add bolt-item.mainhand dummy
+        scoreboard objectives add bolt-item.offhand dummy
+
+    for slot, nbt_path in [
+        ("mainhand", "SelectedItem"),
+        ("offhand", "Inventory[{Slot:-106b}]"),
+        ("head", "Inventory[{Slot:103b}]"),
+        ("chest", "Inventory[{Slot:102b}]"),
+        ("legs", "Inventory[{Slot:101b}]"),
+        ("feet", "Inventory[{Slot:100b}]"),
+    ]:
+        function_path = f'bolt-item:tungsten/{slot}'
+        tungsten_path = f'tungsten:swap/{slot}'
+        unequip_tag_path = f'bolt-item:tungsten/{slot}/unequip'
+        equip_tag_path = f'bolt-item:tungsten/{slot}/equip'
+
+        append function_tag tungsten_path {"values":[function_path]}
+        function function_path:
+            function f'#{unequip_tag_path}'
+            store result score @s f"bolt-item.{slot}" data get entity @s f'{nbt_path}.components."minecraft:custom_data".bolt-item.hash'
+            function f'#{equip_tag_path}'
+
+def _add_tungsten_components(item, slot: str):
+    tungsten_slot_registered = False
+    for modifier in item.get("attribute_modifiers", []):
+        if modifier["type"] == "minecraft:luck" and modifier["id"] == f'tungsten:{slot}':
+            tungsten_slot_registered = True
+            break
+    if not tungsten_slot_registered:
+        item.merge("attribute_modifiers", [{
+            "type": "minecraft:luck",
+            "id": f'tungsten:{slot}',
+            "amount": -9.094947017729282e-13,
+            "operation": "add_value",
+            "slot": slot
+        }])
+        item.merge("tooltip_display", {"hidden_components":["minecraft:attribute_modifiers"]})
