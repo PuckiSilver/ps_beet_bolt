@@ -9,3 +9,21 @@ def tungsten(ctx: Context):
             },
         ),
     )
+
+def argon(ctx: Context):
+    ctx.require(
+        load(
+            data_pack={
+                "data/argon/modules": "@ps_beet_bolt/argon",
+            },
+        ),
+    )
+
+def bolt_item(ctx: Context):
+    ctx.require(
+        load(
+            data_pack={
+                "data/bolt_item/modules": "@ps_beet_bolt/bolt_item",
+            },
+        ),
+    )

@@ -1,0 +1,55 @@
+from ps_beet_bolt.bolt_item import event_decorator
+
+def on_attack(slot: str = "mainhand"):
+    _assert_is_slot(slot)
+    @event_decorator
+    def decorator(func, item):
+        function_path = f'{item.namespace}:bolt-item/item/{item.id}/on_attack/{func.__name__}'
+        player_hurt_entity_function_path = f'{item.namespace}:bolt-item/argon/player_hurt_entity'
+        argon_load_path = f'{item.namespace}:bolt-item/argon/load'
+
+        if _should_register(argon_load_path):
+            append function_tag minecraft:load {"values":[argon_load_path]}
+            function argon_load_path:
+                scoreboard objectives add bolt-item.argon dummy
+
+        if _should_register(player_hurt_entity_function_path):
+            append function_tag argon:player_hurt_entity {"values":[player_hurt_entity_function_path]}
+        
+        if _should_register(player_hurt_entity_function_path + slot):
+            prepend function player_hurt_entity_function_path:
+                on attacker store result score f'.{slot}' bolt-item.argon data get entity @s f'{slot_nbt[slot]}.components."minecraft:custom_data".bolt-item.hash'
+
+        append function player_hurt_entity_function_path:
+            if score f'.{slot}' bolt-item.argon matches item.hash function function_path:
+                func()
+    return decorator
+
+def on_attacked(full_slot: str = "armor.*"):
+    @event_decorator
+    def decorator(func, item):
+        function_path = f'{item.namespace}:bolt-item/item/{item.id}/on_attacked/{func.__name__}'
+        entity_hurt_player_function_path = f'{item.namespace}:bolt-item/argon/entity_hurt_player'
+
+        if _should_register(entity_hurt_player_function_path):
+            append function_tag argon:entity_hurt_player {"values":[entity_hurt_player_function_path]}
+
+        append function entity_hurt_player_function_path:
+            if items entity @s full_slot poisonous_potato[custom_data~{"bolt-item":{id:f'{item.namespace}:{item.id}'}}] function function_path:
+                func()
+    return decorator
+
+#>###### helpers #######<#
+
+slot_nbt = {
+    "mainhand": "SelectedItem",
+    "offhand": "Inventory[{Slot:-106b}]",
+    "head": "Inventory[{Slot:103b}]",
+    "chest": "Inventory[{Slot:102b}]",
+    "legs": "Inventory[{Slot:101b}]",
+    "feet": "Inventory[{Slot:100b}]",
+}
+
+def _assert_is_slot(slot: str):
+    if slot not in ["mainhand","offhand","head","chest","legs","feet"]:
+        raise Exception(f'[bolt-item-argon]: "{slot}" is not a valid slot')

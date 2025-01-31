@@ -1,0 +1,72 @@
+from ps_beet_bolt.bolt_item import event_decorator
+
+registered = []
+
+def on_consume(return_item = False)
+    @event_decorator
+    def decorator(func, item):
+        path = f'{item.namespace}:bolt-item/item/{item.id}/on_consume/{func.__name__}'
+
+        advancement path {"criteria": { "criteria": {
+            "trigger": "minecraft:consume_item", "conditions": {
+            "item": { "predicates": { "minecraft:custom_data": {
+                "bolt-item": { "id": f'{proxy.namespace}:{proxy.id}' }
+            }}}}}},
+            "rewards": { "function": path }
+        }
+
+        function path:
+            advancement revoke @s only path
+            if return_item:
+                _add_regive_base()
+                unless items entity @s weapon.mainhand *[minecraft:custom_data~{bolt-item:{id:(f'{proxy.namespace}:{proxy.id}')}}] function bolt-item:regive_offhand with entity @s Inventory[{Slot:-106b}]
+                if items entity @s weapon.mainhand *[minecraft:custom_data~{bolt-item:{id:(f'{proxy.namespace}:{proxy.id}')}}] function bolt-item:regive_mainhand with entity @s SelectedItem
+            func()
+    return decorator
+
+def on_tick(interval: str = "1", full_slot: str = "weapon.*"):
+    if interval.endswith('t'):
+        interval = interval[:-1]
+    elif interval.endswith('s'):
+        interval = str(int(interval[:-1]) * 20)
+    @event_decorator
+    def decorator(func, item):
+        load_function_path = f'{item.namespace}:bolt-item/tick/load'
+        ticking_function_path = f'{item.namespace}:bolt-item/tick/tick_{interval}'
+        item_specific_function_path = f'{item.namespace}:bolt-item/item/{item.id}/on_tick/{func.__name__}'
+
+        if _should_register(load_function_path):
+            append function_tag minecraft:load {"values":[path]}
+
+        if _should_register(ticking_function_path):
+            append function load_function_path:
+                function ticking_function_path
+            function ticking_function_path:
+                schedule function ticking_function_path interval
+
+        append function ticking_function_path:
+            as @a if items entity @s full_slot poisonous_potato[custom_data~{"bolt-item":{id:f'{item.namespace}:{item.id}'}}] at @s function item_specific_function_path
+
+        function item_specific_function_path:
+            func()
+    return decorator
+
+#>############## helpers ##############<#
+
+def _should_register(path: str) -> bool:
+    global registered
+    if path in registered:
+        return False
+    registered.append(path)
+    return True
+
+def _add_regive_base():
+    if not _should_register("bolt-item:regive"):
+        return
+    function bolt-item:regive_mainhand:
+        item replace entity @s weapon.mainhand with air
+        $loot replace entity @s weapon.mainhand loot {"pools":[{"rolls":1,"entries":[{"type":"minecraft:item","name":"$(id)","functions":[{"function":"minecraft:set_count","count":$(count)},{"function":"minecraft:set_components","components":$(components)}]}]}]}
+
+    function bolt-item:regive_offhand:
+        item replace entity @s weapon.offhand with air
+        $loot replace entity @s weapon.offhand loot {"pools":[{"rolls":1,"entries":[{"type":"minecraft:item","name":"$(id)","functions":[{"function":"minecraft:set_count","count":$(count)},{"function":"minecraft:set_components","components":$(components)}]}]}]}
