@@ -1,5 +1,7 @@
 from ps_beet_bolt.bolt_item import event_decorator
 
+registered = []
+
 def on_attack(slot: str = "mainhand"):
     _assert_is_slot(slot)
     @event_decorator
@@ -53,3 +55,10 @@ slot_nbt = {
 def _assert_is_slot(slot: str):
     if slot not in ["mainhand","offhand","head","chest","legs","feet"]:
         raise Exception(f'[bolt-item-argon]: "{slot}" is not a valid slot')
+
+def _should_register(path: str) -> bool:
+    global registered
+    if path in registered:
+        return False
+    registered.append(path)
+    return True
