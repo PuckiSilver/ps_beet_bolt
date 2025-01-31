@@ -2,7 +2,7 @@ from ps_beet_bolt.bolt_item import event_decorator
 
 registered = []
 
-def on_consume(return_item = False)
+def on_consume(return_item = False):
     @event_decorator
     def decorator(func, item):
         path = f'{item.namespace}:bolt-item/item/{item.id}/on_consume/{func.__name__}'
