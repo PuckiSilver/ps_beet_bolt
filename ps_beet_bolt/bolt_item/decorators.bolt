@@ -36,7 +36,7 @@ def on_tick(interval: str = "1", full_slot: str = "weapon.*"):
         item_specific_function_path = f'{item.namespace}:bolt-item/item/{item.id}/on_tick/{func.__name__}'
 
         if _should_register(load_function_path):
-            append function_tag minecraft:load {"values":[path]}
+            append function_tag minecraft:load {"values":[load_function_path]}
 
         if _should_register(ticking_function_path):
             append function load_function_path:
