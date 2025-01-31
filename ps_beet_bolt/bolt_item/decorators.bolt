@@ -10,7 +10,7 @@ def on_consume(return_item = False):
         advancement path {"criteria": { "criteria": {
             "trigger": "minecraft:consume_item", "conditions": {
             "item": { "predicates": { "minecraft:custom_data": {
-                "bolt-item": { "id": f'{proxy.namespace}:{proxy.id}' }
+                "bolt-item": { "id": f'{item.namespace}:{item.id}' }
             }}}}}},
             "rewards": { "function": path }
         }
@@ -19,8 +19,8 @@ def on_consume(return_item = False):
             advancement revoke @s only path
             if return_item:
                 _add_regive_base()
-                unless items entity @s weapon.mainhand *[minecraft:custom_data~{bolt-item:{id:(f'{proxy.namespace}:{proxy.id}')}}] function bolt-item:regive_offhand with entity @s Inventory[{Slot:-106b}]
-                if items entity @s weapon.mainhand *[minecraft:custom_data~{bolt-item:{id:(f'{proxy.namespace}:{proxy.id}')}}] function bolt-item:regive_mainhand with entity @s SelectedItem
+                unless items entity @s weapon.mainhand *[minecraft:custom_data~{bolt-item:{id:(f'{item.namespace}:{item.id}')}}] function bolt-item:regive_offhand with entity @s Inventory[{Slot:-106b}]
+                if items entity @s weapon.mainhand *[minecraft:custom_data~{bolt-item:{id:(f'{item.namespace}:{item.id}')}}] function bolt-item:regive_mainhand with entity @s SelectedItem
             func()
     return decorator
 
