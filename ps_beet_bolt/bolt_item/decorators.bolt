@@ -19,8 +19,8 @@ def on_consume(return_item = False):
             advancement revoke @s only path
             if return_item:
                 _add_regive_base()
-                unless items entity @s weapon.mainhand *[minecraft:custom_data~{bolt-item:{id:(f'{item.namespace}:{item.id}')}}] function bolt-item:regive_offhand with entity @s Inventory[{Slot:-106b}]
-                if items entity @s weapon.mainhand *[minecraft:custom_data~{bolt-item:{id:(f'{item.namespace}:{item.id}')}}] function bolt-item:regive_mainhand with entity @s SelectedItem
+                unless items entity @s weapon.mainhand (item.base_item)[minecraft:custom_data~{bolt-item:{id:(f'{item.namespace}:{item.id}')}}] function bolt-item:regive_offhand with entity @s Inventory[{Slot:-106b}]
+                if items entity @s weapon.mainhand (item.base_item)[minecraft:custom_data~{bolt-item:{id:(f'{item.namespace}:{item.id}')}}] function bolt-item:regive_mainhand with entity @s SelectedItem
             func()
     return decorator
 
@@ -45,7 +45,7 @@ def on_tick(interval: str = "1", full_slot: str = "weapon.*"):
                 schedule function ticking_function_path interval
 
         append function ticking_function_path:
-            as @a if items entity @s full_slot poisonous_potato[custom_data~{"bolt-item":{id:f'{item.namespace}:{item.id}'}}] at @s function item_specific_function_path
+            as @a if items entity @s full_slot (item.base_item)[custom_data~{"bolt-item":{id:f'{item.namespace}:{item.id}'}}] at @s function item_specific_function_path
 
         function item_specific_function_path:
             func()

@@ -3,7 +3,7 @@ import setuptools
 
 setuptools.setup(
     name="ps_beet_bolt",
-    version="0.2.4",
+    version="0.3.0",
     description="A collection of beet and bolt plugins",
     long_description=pathlib.Path("README.md").read_text(),
     long_description_content_type="text/markdown",

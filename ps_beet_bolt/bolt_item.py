@@ -102,10 +102,11 @@ component_names = [
 class Components:
     __initialized__ = False
 
-    def __init__(self, namespace: str, id: str, hash: int, components: dict):
+    def __init__(self, namespace: str, id: str, hash: int, base_item: str, components: dict):
         self.namespace = namespace
         self.id = id
         self.hash = hash
+        self.base_item = base_item
         for name, value in components.items():
             setattr(self, name, value)
         self.__initialized__ = True
@@ -132,10 +133,15 @@ class Components:
 def item(cls: type):
     components, callables = _get_components_and_callables_from_parents(cls)
 
+    if not 'base_item' in cls.__dict__:
+        cls.base_item = "poisonous_potato"
+    if not 'removed_components' in cls.__dict__:
+        cls.removed_components = ["food","consumable"]
+
     cls.id = camel_case_to_snake_case(cls.__name__)
     cls.namespace = cls.__module__.split(':')[0]
     cls.hash = _int_hash(f"{cls.namespace}:{cls.id}")
-    cls.component_proxy = Components(cls.namespace, cls.id, cls.hash, components)
+    cls.component_proxy = Components(cls.namespace, cls.id, cls.hash, cls.base_item, components)
 
     for c in callables:
         if 'transforms_component' in c.__dict__:
@@ -147,7 +153,7 @@ def item(cls: type):
 
     cls.component_proxy.merge("custom_data", {"bolt-item":{"id":f"{cls.namespace}:{cls.id}","hash":cls.hash}})
 
-    cls.components = _get_mc_components(cls.component_proxy)
+    cls.components = _get_mc_components(cls.component_proxy, cls.removed_components)
 
     return cls
 
@@ -241,20 +247,15 @@ def _int_hash(s: str) -> int:
         truncated_int -= 4294967296
     return truncated_int
 
-def _get_mc_components(proxy: Components) -> dict:
-    cmpnts = {
-        "!minecraft:consumable": {},
-        "!minecraft:food": {},
-    }
+def _get_mc_components(item: Components, removed_components: list[str]) -> dict:
+    cmpnts = {}
 
-    for k, v in proxy.__dict__.items():
-        if k not in component_names or v == None:
-            continue
-        cmpnts["minecraft:" + k] = v
+    for k, v in item.__dict__.items():
+        if k in component_names and v != None:
+            cmpnts["minecraft:" + k] = v
 
-    if "minecraft:food" in cmpnts:
-        del cmpnts["!minecraft:food"]
-    if "minecraft:consumable" in cmpnts:
-        del cmpnts["!minecraft:consumable"]
+    for remcmp in removed_components:
+        if f'minecraft:{remcmp}' not in cmpnts:
+            cmpnts[f'!minecraft:{remcmp}'] = {}
 
     return cmpnts
