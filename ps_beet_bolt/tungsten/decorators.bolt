@@ -67,11 +67,11 @@ def _add_tungsten_base():
 
     for slot, nbt_path in [
         ("mainhand", "SelectedItem"),
-        ("offhand", "Inventory[{Slot:-106b}]"),
-        ("head", "Inventory[{Slot:103b}]"),
-        ("chest", "Inventory[{Slot:102b}]"),
-        ("legs", "Inventory[{Slot:101b}]"),
-        ("feet", "Inventory[{Slot:100b}]"),
+        ("offhand", "equipment.offhand"),
+        ("head", "equipment.head"),
+        ("chest", "equipment.chest"),
+        ("legs", "equipment.legs"),
+        ("feet", "equipment.feet"),
     ]:
         function_path = f'bolt-item:tungsten/{slot}'
         tungsten_path = f'tungsten:swap/{slot}'
