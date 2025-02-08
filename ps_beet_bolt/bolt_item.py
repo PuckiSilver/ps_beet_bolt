@@ -115,7 +115,7 @@ class Components:
         if self.__initialized__ and name not in component_names:
             raise Exception(f'[bolt-item]: "{name}" is not a valid component')
         self.__dict__[name] = value
-    
+
     def __getitem__(self, name):
         return getattr(self, name)
 
@@ -130,7 +130,7 @@ class Components:
 
 #>########### decorators ###########<#
 
-def item(cls: type):
+def bolt_item(cls: type):
     components, callables = _get_components_and_callables_from_parents(cls)
 
     if not 'base_item' in cls.__dict__:
@@ -143,13 +143,9 @@ def item(cls: type):
     cls.hash = _int_hash(f"{cls.namespace}:{cls.id}")
     cls.component_proxy = Components(cls.namespace, cls.id, cls.hash, cls.base_item, components)
 
-    for c in callables:
-        if 'transforms_component' in c.__dict__:
-            cls.component_proxy[c.transforms_component] = c(cls.component_proxy, cls.component_proxy.get(c.transforms_component))
-        if 'custom_component' in c.__dict__:
-            c(cls.component_proxy, getattr(cls, c.custom_component, None))
-        if 'decorator' in c.__dict__:
-            c(cls.component_proxy)
+    _run_callables(cls, callables['before_all'])
+    _run_callables(cls, callables['regular'])
+    _run_callables(cls, callables['after_all'])
 
     cls.component_proxy.merge("custom_data", {"bolt-item":{"id":f"{cls.namespace}:{cls.id}","hash":cls.hash}})
 
@@ -179,6 +175,14 @@ def event_decorator(func):
         return run_it
     return decorator
 
+def before_all(func):
+    func.before_all = True
+    return func
+
+def after_all(func):
+    func.after_all = True
+    return func
+
 #>########### helpers ###########<#
 
 def deep_merge(base, result):
@@ -202,16 +206,31 @@ def deep_merge(base, result):
             base[k] = v
     return base
 
+def _run_callables(cls, callables):
+    for c in callables:
+        if 'transforms_component' in c.__dict__:
+            cls.component_proxy[c.transforms_component] = c(cls.component_proxy, cls.component_proxy.get(c.transforms_component))
+        if 'custom_component' in c.__dict__:
+            c(cls.component_proxy, getattr(cls, c.custom_component, None))
+        if 'decorator' in c.__dict__:
+            c(cls.component_proxy)
+
 def _get_components_and_callables_from_parents(cls):
     components = {}
-    callables = []
+    callables = {
+        "before_all": [],
+        "regular": [],
+        "after_all": [],
+    }
     # get info of parent classes recursively
     for parent in reversed(cls.__bases__):
         if parent != object:
             cmp, cal = _get_components_and_callables_from_parents(parent)
             for ck, cv in cmp.items():
                 components[ck] = cv
-            callables += cal
+            callables['before_all'] += cal['before_all']
+            callables['after_all'] += cal['after_all']
+            callables['regular'] += cal['regular']
     # get info of this class
     for k, v in cls.__dict__.items():
         if k in component_names or k in components: #! custom components are currently ignored
@@ -219,7 +238,12 @@ def _get_components_and_callables_from_parents(cls):
         if callable(v) and ('transforms_component' in v.__dict__ or 'custom_component' in v.__dict__ or 'decorator' in v.__dict__):
             if 'custom_component' in v.__dict__:
                 components[v.custom_component] = getattr(cls, v.custom_component, None)
-            callables.append(v)
+            if getattr(v, 'before_all', False):
+                callables["before_all"].append(v)
+            elif getattr(v, 'after_all', False):
+                callables["after_all"].append(v)
+            else:
+                callables["regular"].append(v)
     return (components, callables)
 
 def _combine_lists(l1, l2):

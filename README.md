@@ -23,7 +23,7 @@ data_pack:
 
 Example code with explanations:
 ```py
-from ps_beet_bolt.bolt_item import transformer, custom_component, event_decorator
+from ps_beet_bolt.bolt_item import bolt_item, transformer, custom_component, event_decorator
 from tungsten:decorators import on_equip, on_unequip
 from argon:decorators import on_attack, on_attacked
 from bolt_item:decorators import on_consume, on_tick
@@ -71,10 +71,10 @@ class ParentItem:
         """
         return {"text":item_name,"color":"red"}
 
-@item
+@bolt_item
 class ActualItem(ParentItem):
     """
-    Any classes with the @item decorator are treated as item and get a .components and a .base_item
+    Any classes with the @bolt_item decorator are treated as item and get a .components and a .base_item
     attribute set. Those can be used to create loot tables or other stuff.
     """
     item_name = "Awesome Item"
